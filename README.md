@@ -2,7 +2,7 @@
 
 This repository contains data and R scripts for clustering analyses of Quaternary mammal communities, focusing on both a novel iterative “chase” algorithm and a spatially constrained Ward’s hierarchical approach. With these scripts, you can replicate the results of:
 
-Brook, B.W., Alroy, J. _et al._ (2025). Title. _EcoEvoRxiv_.** (placeholder; forthcoming)
+Brook, B.W., Alroy, J. _et al._ (2025). Title. _EcoEvoRxiv_. (placeholder; forthcoming)
 
 ## Contents
 
@@ -92,7 +92,7 @@ If you use this repository, code, or data in your own work, please cite:
 
 ## License
 
-This project is released under the MIT License. See [LICENSE](LICENSE) for details. Data and code are provided “as is,” without warranty of any kind.
+This project is released under the CC0-1.0 License. See [LICENSE](LICENSE) for details. Data and code are provided “as is,” without warranty of any kind.
 
 ## Contributing
 
