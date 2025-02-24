@@ -7,7 +7,7 @@ import::from("dplyr", across, filter, mutate, select, ungroup)
 import::from("magrittr", "%>%")
 import::from("sf", st_as_sf, st_distance)
 import::from("tibble", rownames_to_column)
-library(ggplot2)
+import::from("src/qm_clustchase_func.r", plot_world_map) # import custom functions
 
 setwd("C:/git/chase-clustering") # choose appropriate location
 
@@ -19,7 +19,7 @@ site_coords <- read.csv("data/all_site_coords.csv", row.names = "site")      # S
 # Set analysis parameters
 dat    <- pleistocene       # Data set to test (pleistocene or holocene)
 min_sp <- 5                 # Minimum number of species per site
-k      <- 7                 # Desired number of clusters
+k      <- 5                 # Desired number of clusters
 
 # Create filtered occupancy matrix:
 # - Exclude sites with fewer than min_sp species.
@@ -64,22 +64,15 @@ alpha_opt <- max(candidate_alphas); alpha_opt
 tree_spatial <- hclustgeo(d0, d1, alpha_opt)
 dat_clust$cluster <- cutree(tree_spatial, k)
 
-# Plot the clustering results on a world map
-world_map <- subset(map_data("world"), long <= 180)
+# Plot clustering results (dat_clust must have lon, lat, and cluster columns)
+p_ward <- plot_world_map(point_data = dat_clust,
+                         color_var = "cluster",
+                         point_size = 2,
+                         legend_position = "none",
+                         title = NULL, 
+                         subtitle = NULL,
+                         save_file = 'Pleistocene_Ward.png')
 
-p_ward <- ggplot() +
-  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgrey", color = NA) +
-  geom_point(data = dat_clust, aes(x = lon, y = lat, color = factor(cluster)), size = 2) +
-  coord_map("moll") +
-  theme_void() +
-  theme(
-    legend.position = "none",
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.margin = margin(10, 10, 10, 10)
-  )
-
-# Display and save individual plot to PNG files
-p_ward # Note: designed to be included in panel plot with additional title and labels
-ggsave("Pleistocene_Ward.png", p_ward, width = 6, height = 4, units = "in", dpi = 300, scale = 1)
+# Display the plot in RStudio
+print(p_ward)
 

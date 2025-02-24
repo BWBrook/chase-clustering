@@ -1,12 +1,10 @@
 ### Quaternary community data
 
 ## Import specific package functions
-import::from("dplyr", left_join, mutate, select, slice)
-import::from("magrittr", "%>%")
-import::from("tibble", rownames_to_column)
-library(ggplot2)
-
-setwd("C:/git/chase-clustering") # choose appropriate location
+import::here("dplyr", left_join, mutate, select, slice)
+import::here("magrittr", "%>%")
+import::here("tibble", enframe, rownames_to_column)
+import::here("ggplot2", ggplot, geom_polygon, geom_point, aes, aes_string, coord_map, theme_void, theme, element_text, labs, ggsave, map_data, margin)
 
 # Preprocessing: ensure numeric, remove zero-row species, filter columns by min_sp, build chaseMatrix
 prepareChaseClusteringData <- function(dataMatrix, min_sp, max_clusters) {
@@ -236,8 +234,8 @@ runChaseClustering <- function(preproc,
       noImprovementCount <- 0
     } else {
       noImprovementCount <- noImprovementCount + 1
-      if (noImprovementCount > 3) {
-        if (verbose) cat("No improvement for +4 cluster sizes, stopping.\n")
+      if (noImprovementCount > 2) {
+        if (verbose) cat("No improvement for +3 cluster sizes, stopping.\n")
         break
       }
     }
@@ -252,27 +250,38 @@ runChaseClustering <- function(preproc,
   ))
 }
 
-# --- Main Script ---
-# Read primary datasets
-pleistocene <- read.csv("data/pleistocene_all.csv", row.names = "species")   # Pleistocene species-site occupancy
-holocene    <- read.csv("data/holocene_all.csv", row.names = "species")      # Holocene species-site (with domesticates)
-site_coords <- read.csv("data/all_site_coords.csv", row.names = "site")       # Site descriptive variables and coordinates
+plot_world_map <- function(point_data, 
+                           color_var = "cluster", 
+                           point_size = 2, 
+                           legend_position = "none", 
+                           title = NULL, 
+                           subtitle = NULL, 
+                           plot_margin = margin(10, 10, 10, 10), 
+                           save_file = NULL, 
+                           width = 6, height = 4, 
+                           units = "in", dpi = 300, scale = 1) {
+  # Build the ggplot object using labs() for title/subtitle
+  p <- ggplot() +
+    geom_polygon(data = subset(map_data("world"), long <= 180), 
+                 aes(x = long, y = lat, group = group), 
+                 fill = "lightgrey", color = NA) +
+    geom_point(data = point_data, 
+               aes_string(x = "lon", y = "lat", 
+                          color = paste0("factor(", color_var, ")")), 
+               size = point_size) +
+    coord_map("moll") +
+    theme_void() +
+    theme(legend.position = legend_position,
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          plot.margin = plot_margin) +
+    labs(title = title, subtitle = subtitle)
+  
+  if (!is.null(save_file)) {
+    ggsave(filename = save_file, plot = p, 
+           width = width, height = height, units = units, dpi = dpi, scale = scale)
+  }
+  
+  return(p)
+}
 
-# Set analysis parameters
-dataMatrix   <- pleistocene # Choose dataset: pleistocene or holocene
-alpha        <- -0.1        # Set to negative (e.g., -0.1 or -0.5) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1 or 0.5) for fewer clusters
-min_sp       <- 5           # Minimum species count per site to include
-max_clusters <- 10           # Maximum number of clusters to test
-max_starts   <- 100         # Number of starting configurations (affects run duration)
-max_shuffles <- 1000        # Number of stochastic shuffles for optimization
-
-preproc <- prepareChaseClusteringData(dataMatrix = dataMatrix, min_sp = min_sp, max_clusters = max_clusters)
-
-### Run the chase clustering algorithm runs
-result <- runChaseClustering(preproc, max_clusters = max_clusters, max_starts = max_starts, max_shuffles = max_shuffles, 
-                             site_coords = site_coords, alpha = alpha, verbose = TRUE)
-
-print(result$finalFitMetric)
-print(result$finalClusterAssign)
-
-# Need to add plotting code from clustgeo
