@@ -1,12 +1,12 @@
 # Computes and plots site-specific compositional turnover for 34 sites that have both Pleistocene and Holocene data
 
-import::from("dplyr", rowwise, mutate, select, filter)
-import::from("magrittr", "%>%")
-import::from("tibble", rownames_to_column)
+setwd("C:/git/chase-clustering") # choose appropriate location
+
+## Import specific package functions
+import::from("src/qm_clustchase_func.r", .all=T) # import custom functions
+import::from("dplyr", rowwise, filter)
 library(ggplot2)
 library(sf)
-
-setwd("C:/git/chase-clustering") # adapt as needed
 
 # Load the data
 pleistocene <- read.csv("data/pleistocene_paired.csv", row.names = 1, check.names = FALSE)

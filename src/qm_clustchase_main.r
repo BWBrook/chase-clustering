@@ -9,11 +9,12 @@ import::from("src/qm_clustchase_func.r", .all=T) # import custom functions
 # Read primary datasets
 pleistocene <- read.csv("data/pleistocene_all.csv", row.names = "species")   # Pleistocene species-site occupancy
 holocene    <- read.csv("data/holocene_wild.csv", row.names = "species")      # Holocene wild species-site (without domesticates)
+#holocene    <- read.csv("data/holocene_all.csv", row.names = "species")      # Holocene all species-site (with domesticates)
 site_coords <- read.csv("data/all_site_coords.csv", row.names = "site")       # Site descriptive variables and coordinates
 
 # Set analysis parameters
-dataMatrix   <- pleistocene # Choose dataset: pleistocene or holocene
-alpha        <- 0        # Set to negative (e.g., -0.2) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
+dataMatrix   <- holocene # Choose dataset: pleistocene or holocene
+alpha        <- -0.1        # Set to negative (e.g., -0.1) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
 min_sp       <- 5           # Minimum species count per site to include
 max_clusters <- 15          # Maximum number of clusters to test
 max_starts   <- 250         # Number of starting configurations (affects run duration and max clusters found)
@@ -39,15 +40,5 @@ p_chase <- plot_world_map(point_data = dat_clust,
                          legend_position = "none",
                          title = NULL, 
                          subtitle = NULL,
-                         save_file = 'Pleistocene_Ward.png')
+                         save_file = 'Holocene_all_chase_a-01.png')
 print(p_chase)
-
-# Re-run each on 250 starts and 10000 samples for the penalization sensitivity. Otherwise too stochastic to lock onto a good result.
-
-# Pleistocene tuning
-# alpha   Clust
-#  0      1
-# -0.1    1
-# -0.15   1
-# -0.2    1
-# -0.25   1

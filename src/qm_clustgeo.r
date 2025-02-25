@@ -1,25 +1,24 @@
 # Hierarchical Geographic Clustering Using Ward's Method with Spatial Constraints
 # Quaternary Community Analysis
 
+setwd("C:/git/chase-clustering") # choose appropriate location
+
 # Load necessary functions from packages
 import::from("ClustGeo", choicealpha, hclustgeo)
-import::from("dplyr", across, filter, mutate, select, ungroup)
-import::from("magrittr", "%>%")
+import::from("dplyr", across, filter, ungroup)
 import::from("sf", st_as_sf, st_distance)
-import::from("tibble", rownames_to_column)
-import::from("src/qm_clustchase_func.r", plot_world_map) # import custom functions
-
-setwd("C:/git/chase-clustering") # choose appropriate location
+import::from("src/qm_clustchase_func.r", .all=T) # import custom functions
 
 # Read in primary datasets (ensure the working directory is set appropriately)
 pleistocene <- read.csv("data/pleistocene_all.csv", row.names = "species")  # Pleistocene species-site occupancy
-holocene    <- read.csv("data/holocene_all.csv", row.names = "species")     # Holocene species-site (with domesticates)
+holocene    <- read.csv("data/holocene_wild.csv", row.names = "species")     # Holocene species-site (without domesticates)
+#holocene    <- read.csv("data/holocene_all.csv", row.names = "species")     # Holocene species-site (with domesticates)
 site_coords <- read.csv("data/all_site_coords.csv", row.names = "site")      # Site descriptive variables and coordinates
 
 # Set analysis parameters
 dat    <- pleistocene       # Data set to test (pleistocene or holocene)
 min_sp <- 5                 # Minimum number of species per site
-k      <- 5                 # Desired number of clusters
+k      <- 6                 # Desired number of clusters
 
 # Create filtered occupancy matrix:
 # - Exclude sites with fewer than min_sp species.
