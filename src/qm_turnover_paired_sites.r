@@ -1,4 +1,4 @@
-# Computes and plots site-specific compositional turnover for 34 sites that have both Pleistocene and Holocene data
+# Computes and plots site-specific compositional turnover for paired sites that have both Pleistocene and Holocene data
 
 setwd("C:/git/chase-clustering") # choose appropriate location
 
@@ -23,7 +23,7 @@ pleistocene <- (pleistocene > 0) * 1
 holocene    <- (holocene > 0) * 1
 
 # For each site (column), compute turnover between Pleistocene and Holocene
-# A standard measure is "turnover" = (lost_species + gained_species) / (total_species across the two periods)
+# "turnover" in this calculation = (lost_species + gained_species) / (total_species across the two periods)
 # turnover[i] = (# of species in Pleistocene only + # of species in Holocene only) / (# of species in Pleistocene union Holocene)
 turnover_df <- data.frame(site = coords$site, turnover = NA_real_)
 

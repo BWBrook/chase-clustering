@@ -1,6 +1,4 @@
-# domesticates_analysis.R
-
-# This script identifies domesticated species in the Holocene data to produce:
+# Identifies domesticated species in the Holocene data to produce:
 # (1) A summary of domesticates' frequency across sites
 # (2) An example "chase clustering" for holocene_all vs. holocene_wild to see how domesticates affect cluster assignments
 # (3) A table of results highlighting the impact of domesticates
@@ -25,7 +23,7 @@ cat("Number of Holocene domesticated species:", length(domesticated_species), "\
 
 # Summarise how many sites (columns) contain at least one domesticated species
 holocene_all_mat <- as.matrix(holocene_all)  # ensure numeric or logical
-dom_matrix       <- holocene_all_mat[domesticated_species, , drop = FALSE]
+dom_matrix <- holocene_all_mat[domesticated_species, , drop = FALSE]
 sites_with_dom <- apply(dom_matrix, 2, function(x) any(x > 0))
 num_sites_with_dom <- sum(sites_with_dom)
 cat("Number of sites with >= 1 domesticated species:", num_sites_with_dom, "\n")
@@ -73,8 +71,7 @@ res_wild  <- runChaseClustering(prep_wild,
 k_best_wild <- which.min(res_wild$finalFitMetric[2:max_clusters]) + 1
 clusters_wild <- res_wild$finalClusterAssign[, k_best_wild]
 
-# Since the site sets might differ if some columns got dropped 
-# (due to min_sp in wild-only data), we restrict to the shared site set:
+# Restrict to the shared site set
 shared_sites <- intersect(names(clusters_all), names(clusters_wild))
 common_clust_all  <- clusters_all[shared_sites]
 common_clust_wild <- clusters_wild[shared_sites]

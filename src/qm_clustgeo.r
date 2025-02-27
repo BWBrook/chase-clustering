@@ -1,9 +1,7 @@
 # Hierarchical Geographic Clustering Using Ward's Method with Spatial Constraints
-# Quaternary Community Analysis
 
 setwd("C:/git/chase-clustering") # choose appropriate location
 
-# Load necessary functions from packages
 import::from("ClustGeo", choicealpha, hclustgeo)
 import::from("dplyr", across, filter, ungroup)
 import::from("sf", st_as_sf, st_distance)

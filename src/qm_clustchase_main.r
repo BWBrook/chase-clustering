@@ -1,4 +1,4 @@
-### Quaternary community data
+### Quaternary community data: chase clustering implementation
 
 setwd("C:/git/chase-clustering") # choose appropriate location
 

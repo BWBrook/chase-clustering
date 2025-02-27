@@ -1,6 +1,5 @@
-### Quaternary community data
+# qe_clustering and plotting functions
 
-## Import specific package functions
 import::here("dplyr", left_join, mutate, select, slice)
 import::here("magrittr", "%>%")
 import::here("tibble", enframe, rownames_to_column)
@@ -81,7 +80,7 @@ computeFitMetric <- function(clusterMatrix) {
   return(overlap)
 }
 
-# Main chase clustering. We minimize the (overlap + alpha * numClusters).
+# Main chase clustering. We minimize the (overlap + alpha * numClusters). See Fig. 1 flowchart in main paper.
 runChaseClustering <- function(preproc,
                                max_clusters,
                                max_starts,
@@ -186,7 +185,7 @@ runChaseClustering <- function(preproc,
           cat(sprintf("\nFound new best for cluster=%d start=%d fit=%.6f\n", 
                       numClusters, startConfig, bestFitMetric))
         }
-        # Optional quick plot
+        # Optional plot
         #idx <- paste0("s_", sampleNumber)
         #plot_coords <- site_coords[idx, , drop = FALSE]
         #lon <- as.numeric(as.character(plot_coords[, 1]))
@@ -260,7 +259,7 @@ plot_world_map <- function(point_data,
                            save_file = NULL, 
                            width = 6, height = 4, 
                            units = "in", dpi = 300, scale = 1) {
-  # Build the ggplot object using labs() for title/subtitle
+
   p <- ggplot() +
     geom_polygon(data = subset(map_data("world"), long <= 180), 
                  aes(x = long, y = lat, group = group), 

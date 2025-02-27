@@ -2,7 +2,7 @@
 
 This repository contains data and R scripts for clustering analyses of Quaternary mammal communities, focusing on both a novel iterative “chase” algorithm and a spatially constrained Ward’s hierarchical approach. With these scripts, you can replicate the results of:
 
-Brook, B.W., Alroy, J. _et al._ (2025). Title. _EcoEvoRxiv_. (placeholder; forthcoming)
+Brook, B.W. _et al._ (2025). Title. _EcoEvoRxiv_. (placeholder; forthcoming)
 
 ## Contents
 
@@ -10,16 +10,19 @@ Brook, B.W., Alroy, J. _et al._ (2025). Title. _EcoEvoRxiv_. (placeholder; forth
   CSV files storing the fossil mammal occurrence data and site coordinates:
   - `pleistocene_all.csv`  
   - `holocene_all.csv`  
+  - `holocene_wild.csv`
   - `all_site_coords.csv`  
   - `pleistocene_paired.csv`  
   - `holocene_paired.csv`  
   - `paired_site_coords.csv`  
   
 - **src/**  
-  Three main R scripts that conduct all analyses described in the paper:
-  1. `qe_biogeography_clustchase.r` – Implements the chase clustering algorithm, including data filtering and iterative improvement of cluster assignments based purely on compositional similarity.  
-  2. `qe_biogeography_clustgeo.r` – Applies Ward’s hierarchical clustering with spatial constraints (via ClustGeo) to illustrate the role of geography in shaping community structure.  
-  3. `qe_turnover_paired_sites.r` – Calculates site-level turnover for paired localities that have both Late Pleistocene and Holocene faunal data, displaying shifts in species composition through time.
+  Five R scripts are available to replicate all analyses described in the paper:
+  1. `qm_clustchase_func.r` – Function library, implements the chase clustering algorithm, with iterative improvement of cluster assignments based purely on compositional similarity.
+  2. `qm_clustchase_main.r` – Runs the chase clustering algorithm, including data filtering, on the datasets.  
+  3. `qm_clustgeo.r` – Applies Ward’s hierarchical clustering with spatial constraints (via ClustGeo) to illustrate the role of geography in shaping community structure.  
+  4. `qm_domesticates.r` – Uses ARI metric and summary statistics to examine the impact of domesticated species on Holocene composition.
+  5. `qm_turnover_paired_sites.r` – Calculates site-level turnover for paired localities that have both Late Pleistocene and Holocene faunal data, displaying shifts in species composition through time.
 
 ## Requirements
 
@@ -48,9 +51,7 @@ install.packages(c("dplyr", "magrittr", "tibble", "ggplot2", "sf", "maps", "Clus
    setwd("path/to/chase-clustering")  # adapt as needed
    ```
 3. **Run the scripts** in the `/src` folder in whichever order suits your interest:
-   - `qe_biogeography_clustchase.r` for the chase clustering method.  
-   - `qe_biogeography_clustgeo.r` for Ward’s constrained clustering.  
-   - `qe_turnover_paired_sites.r` for paired-site turnover calculations.  
+ 
 4. **Inspect outputs**: each script produces console output, plots (in the R graphics window), and optionally saves figures to disk (`.png` or `.pdf`).  
 
 You may edit script parameters (e.g., `max_clusters`, `min_sp`, etc.) to explore different settings.
@@ -59,7 +60,7 @@ You may edit script parameters (e.g., `max_clusters`, `min_sp`, etc.) to explore
 
 All CSV files in `data/` are read by the R scripts to replicate the analyses in the forthcoming paper:
 
-- `pleistocene_all.csv` and `holocene_all.csv`: large presence/absence (or counts) matrices (rows = species, columns = sites).  
+- `pleistocene_all.csv`, `holocene_all.csv` and `holocene_all.csv`: large presence/absence (or counts) matrices (rows = species, columns = sites).  
 - `all_site_coords.csv`: coordinates (longitude, latitude) and other metadata for each site in the full dataset.  
 - `pleistocene_paired.csv`, `holocene_paired.csv`, `paired_site_coords.csv`: smaller subset of 34 “paired” sites that have data in both periods, used for turnover analyses.
 
@@ -67,7 +68,7 @@ All CSV files in `data/` are read by the R scripts to replicate the analyses in 
 
 1. **Data Filtering**: scripts automatically exclude sites below a certain species threshold (usually 5) to reduce noise.  
 2. **Clustering**: 
-   - _Chase_ method (purely compositional) is iterative and random, so results can vary slightly run to run.  
+   - _Chase_ method (purely compositional) is iterative and random, so results can vary slightly run to run. Use large number of `max_starts` and `max_shuffles` to stabilise.  
    - _Ward’s_ method merges sites by minimizing a composite distance of compositional and geographic information (from ClustGeo).  
 3. **Turnover**: For the paired sites, a straightforward index of compositional change between Late Pleistocene and Holocene is computed, and a map is generated to illustrate which sites underwent the greatest faunal shifts.
 
@@ -78,7 +79,7 @@ Refer to the inline comments in each script for detailed steps and explanations.
 If you use this repository, code, or data in your own work, please cite:
 
 - The forthcoming paper:  
-  Brook, B.W., Alroy, J. _et al._ (2025). Title. _EcoEvoRxiv_. (Exact details will be added here once published.)
+  Brook, B.W. _et al._ (2025). Title. _EcoEvoRxiv_. (Exact details will be added here once published.)
 
 - This repository:  
   ```
