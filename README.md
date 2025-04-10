@@ -2,7 +2,7 @@
 
 This repository contains data and R scripts for clustering analyses of Quaternary mammal communities, focusing on both a novel iterative “chase” algorithm and a spatially constrained Ward’s hierarchical approach. With these scripts, you can replicate the results of:
 
-Brook, B.W. _et al._ (2025). Title. _EcoEvoRxiv_. (placeholder; forthcoming)
+Brook, B.W. _et al._ (2025). Late Pleistocene faunal community patterns disrupted by Holocene human impacts. _EcoEvoRxiv_.
 
 ## Contents
 
@@ -79,7 +79,7 @@ Refer to the inline comments in each script for detailed steps and explanations.
 If you use this repository, code, or data in your own work, please cite:
 
 - The forthcoming paper:  
-  Brook, B.W. _et al._ (2025). Title. _EcoEvoRxiv_. (Exact details will be added here once published.)
+  Brook, B.W. _et al._ (2025). Late Pleistocene faunal community patterns disrupted by Holocene human impacts. _EcoEvoRxiv_. (Exact details will be added here once published.)
 
 - This repository:  
   ```
