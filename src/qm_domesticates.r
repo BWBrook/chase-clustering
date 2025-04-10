@@ -100,3 +100,57 @@ res_table <- data.frame(
 
 print(res_table)
 write.csv(res_table, "domestics_impact_summary.csv", row.names = FALSE)
+
+## For plot in Supplementary Information
+
+## Import specific package functions
+import::from("src/qm_clustchase_func.r", .all=T) # import custom functions
+import::from("dplyr", filter)
+library(ggplot2)
+library(sf)
+
+# Read Holocene data
+holocene_all <- read.csv("data/holocene_all.csv", row.names = 1, check.names = FALSE)
+holocene_wild <- read.csv("data/holocene_wild.csv", row.names = 1, check.names = FALSE)
+
+# Read site coordinates (ensure this CSV has columns: "site", "lon", "lat")
+site_coords <- read.csv("data/all_site_coords.csv")
+
+# Identify domesticated species
+holocene_all_mat <- as.matrix(holocene_all)
+domesticated_species <- setdiff(rownames(holocene_all), rownames(holocene_wild))
+dom_matrix <- holocene_all_mat[domesticated_species, , drop = FALSE]
+
+# Calculate proportion of domesticated species per site
+total_species_per_site <- colSums(holocene_all_mat > 0)
+domestics_per_site <- colSums(dom_matrix > 0)
+prop_domestics_per_site <- domestics_per_site / total_species_per_site
+
+# Merge with coordinates
+prop_dom_df <- data.frame(site = names(prop_domestics_per_site), proportion_domestics = prop_domestics_per_site)
+coords_domestics <- merge(site_coords, prop_dom_df, by = "site")
+
+# Plot map of proportion domesticated
+world_map <- subset(map_data("world"), long <= 180)
+
+p_domestics <- ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group),
+               fill = "lightgrey", color = NA) +
+  geom_point(data = coords_domestics, 
+             aes(x = lon, y = lat, color = proportion_domestics), 
+             size = 2) +
+  scale_color_gradient(low = "blue", high = "red", name = "Proportion domesticated") +
+  coord_map("moll") +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 10),
+    plot.margin = margin(10, 10, 10, 10)
+  ) +
+  ggtitle("Proportion of Domesticated Species per Holocene Site")
+
+summary(coords_domestics$proportion_domestics)
+print(p_domestics)
+ggsave("supplement_proportion_domestics_map.png", p_domestics, width = 6, height = 4, units = "in", dpi = 300, scale = 1)
