@@ -34,7 +34,7 @@ cat("Mean # of domesticated species per site (across all Holocene sites):",
     round(mean_dom_per_site, 2), "\n")
 
 # Set analysis parameters
-alpha        <- -0.1        # Set to negative (e.g., -0.1) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
+gamma        <- -0.1        # Set to negative (e.g., -0.1) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
 min_sp       <- 5           # Minimum species count per site to include
 max_clusters <- 15          # Maximum number of clusters to test
 max_starts   <- 250         # Number of starting configurations (affects run duration and max clusters found)
@@ -45,12 +45,12 @@ prep_all <- prepareChaseClusteringData(dataMatrix = holocene_all,
                                        min_sp = min_sp, 
                                        max_clusters = max_clusters)
 
-res_all  <- runChaseClustering(prep_all, 
-                               max_clusters = max_clusters, 
-                               max_starts = max_starts, 
+res_all  <- runChaseClustering(prep_all,
+                               max_clusters = max_clusters,
+                               max_starts = max_starts,
                                max_shuffles = max_shuffles,
                                site_coords = NULL,
-                               alpha = alpha,
+                               gamma = gamma,
                                verbose = TRUE)
 
 k_best_all <- which.min(res_all$finalFitMetric[2:max_clusters]) + 1
@@ -65,7 +65,7 @@ res_wild  <- runChaseClustering(prep_wild,
                                 max_starts = max_starts,
                                 max_shuffles = max_shuffles,
                                 site_coords = NULL,
-                                alpha = alpha,
+                                gamma = gamma,
                                 verbose = TRUE)
 
 k_best_wild <- which.min(res_wild$finalFitMetric[2:max_clusters]) + 1
