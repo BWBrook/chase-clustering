@@ -80,13 +80,13 @@ computeFitMetric <- function(clusterMatrix) {
   return(overlap)
 }
 
-# Main chase clustering. We minimize the (overlap + alpha * numClusters). See Fig. 1 flowchart in main paper.
+# Main chase clustering. We minimize the (overlap + gamma * numClusters). See Fig. 1 flowchart in main paper.
 runChaseClustering <- function(preproc,
                                max_clusters,
                                max_starts,
                                max_shuffles,
                                site_coords,
-                               alpha   = 0,     # set > 0 to penalize more clusters
+                               gamma   = 0,     # set > 0 to penalize more clusters
                                verbose = TRUE) {
   
   dataMatrix         <- preproc$dataMatrix
@@ -161,7 +161,7 @@ runChaseClustering <- function(preproc,
         # Compute penalized fit
         rawFit      <- computeFitMetric(clusterSumMatrix)
         if(rawFit==0) rawFit <- 1e6 # skip degenerate cases where rawFit == 0 (typically with clusters == 2)
-        penalizedFit <- rawFit + alpha * numClusters
+        penalizedFit <- rawFit + gamma * numClusters
         
         if (penalizedFit < bestFitMetric) {
           bestFitMetric <- penalizedFit

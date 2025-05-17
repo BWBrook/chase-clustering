@@ -14,7 +14,7 @@ site_coords <- read.csv("data/all_site_coords.csv", row.names = "site")       # 
 
 # Set analysis parameters
 dataMatrix   <- holocene # Choose dataset: pleistocene or holocene
-alpha        <- -0.1        # Set to negative (e.g., -0.1) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
+gamma        <- -0.1        # Set to negative (e.g., -0.1) to encourage more clustering, 0 for no penalization, positive (e.g., 0.1) for fewer clusters
 min_sp       <- 5           # Minimum species count per site to include
 max_clusters <- 15          # Maximum number of clusters to test
 max_starts   <- 250         # Number of starting configurations (affects run duration and max clusters found)
@@ -23,8 +23,8 @@ max_shuffles <- 10000       # Number of stochastic shuffles for optimization (af
 preproc <- prepareChaseClusteringData(dataMatrix = dataMatrix, min_sp = min_sp, max_clusters = max_clusters)
 
 ### Run the chase clustering algorithm runs
-result <- runChaseClustering(preproc, max_clusters = max_clusters, max_starts = max_starts, max_shuffles = max_shuffles, 
-                             site_coords = site_coords, alpha = alpha, verbose = TRUE)
+result <- runChaseClustering(preproc, max_clusters = max_clusters, max_starts = max_starts, max_shuffles = max_shuffles,
+                             site_coords = site_coords, gamma = gamma, verbose = TRUE)
 
 print(result$finalFitMetric); print(result$universalBestClusters)
 
@@ -40,5 +40,5 @@ p_chase <- plot_world_map(point_data = dat_clust,
                          legend_position = "none",
                          title = NULL, 
                          subtitle = NULL,
-                         save_file = 'Holocene_all_chase_a-01.png')
+                         save_file = 'Holocene_all_chase_g-01.png')
 print(p_chase)
