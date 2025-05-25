@@ -1,42 +1,44 @@
-# qe_clustering and plotting functions
+# chase_clustering_main.R
+# Main implementation of 'chase' clustering for species-site presence/absence matrices.
+# See main text and supplement for method rationale and parameter selection.
 
 import::here("dplyr", left_join, mutate, select, slice)
 import::here("magrittr", "%>%")
 import::here("tibble", enframe, rownames_to_column)
 import::here("ggplot2", ggplot, geom_polygon, geom_point, aes, aes_string, coord_map, theme_void, theme, element_text, labs, ggsave, map_data, margin)
 
-# Preprocessing: ensure numeric, remove zero-row species, filter columns by min_sp, build chaseMatrix
+# ========== Preprocessing function ==========
+# Filters sites/species, constructs the 'shared-taxa' (co-occurrence) matrix. 
 prepareChaseClusteringData <- function(dataMatrix, min_sp, max_clusters) {
   # dataMatrix is read from CSV, so it may have come in as data.frame with rownames as species
   # Make sure everything except rownames is numeric
-  dataMatrix <- as.matrix(dataMatrix)  # tries to convert to numeric matrix; errors if any non-numeric cell
+  dataMatrix <- as.matrix(dataMatrix)  # Convert to numeric matrix if needed
   
-  # Remove rows that are entirely zero (no presence across all sites)
+  # Remove species (rows) with no presence at any site
   rowTotals <- rowSums(dataMatrix)
   dataMatrix <- dataMatrix[rowTotals > 0, , drop = FALSE]
   
-  # Filter columns (sites) to only those with colSum >= min_sp
+  # Remove sites (columns) with fewer than min_sp species
   colTotals <- colSums(dataMatrix)
   keepCols  <- which(colTotals >= min_sp)
   dataMatrix <- dataMatrix[, keepCols, drop = FALSE]
   
-  # Possibly remove species rows that became zero after col filtering
+  # After site filtering, drop any now-empty species rows
   rowTotals <- rowSums(dataMatrix)
   dataMatrix <- dataMatrix[rowTotals > 0, , drop = FALSE]
   
-  # sampleNumber is derived from the column names if they are like "s_1", "s_4", etc.
-  # Suppose we want them as integers. For safety, we can do:
+  # Extract numeric site indices if present (e.g. 's_001' → 1)
   colNames <- colnames(dataMatrix)
-  sampleNumber <- gsub("^s_", "", colNames)   # strip off "s_"
-  sampleNumber <- as.integer(sampleNumber)    # convert to integer
+  sampleNumber <- gsub("^s_", "", colNames)
+  sampleNumber <- as.integer(sampleNumber)
   
-  # For weighting the random seeds, you could use column sums or just uniform:
+  # Weight vector used for random cluster seeding (site richness)
   weightVector <- colSums(dataMatrix)
   
-  # Now build the chaseMatrix via crossprod: size is (#columns) x (#columns)
+  # Shared-taxa matrix: n_sites x n_sites, each cell is # shared species between site pairs
   chaseMatrix <- crossprod(dataMatrix)
   
-  # Initialize final containers
+  # Output containers for tracking best solution for each cluster count
   finalFitMetric <- rep(1e6, max_clusters)
   finalClusterAssign <- matrix(0, ncol(dataMatrix), max_clusters,
                                dimnames = list(sampleNumber, paste0("C", 1:max_clusters)))
@@ -51,24 +53,25 @@ prepareChaseClusteringData <- function(dataMatrix, min_sp, max_clusters) {
   ))
 }
 
-# A simple pairwise overlap measure: bigger overlap => bigger metric => "worse" => we want to minimize
+# ========== Fit metric ==========
+# Sums all pairwise overlaps between clusters (lower = better separation).
 computeFitMetric <- function(clusterMatrix) {
   clusterSums <- colSums(clusterMatrix)
   
-  # Remove clusters with zero total
+  # Remove any clusters with no species
   if (any(clusterSums == 0)) {
     clusterMatrix <- clusterMatrix[, clusterSums > 0, drop = FALSE]
-    # If that leaves < 2 clusters, return a large penalty
     if (ncol(clusterMatrix) < 2) {
       return(1e6)
     }
+    # Penalise degenerate solutions (single or empty clusters)
     clusterSums <- colSums(clusterMatrix)
   }
   
-  # Normalize columns
+  # Column-normalise by cluster size
   clusterMatrix <- sweep(clusterMatrix, 2, clusterSums, FUN = "/")
   
-  # Pairwise overlap
+  # Calculate total pairwise overlap
   nclust <- ncol(clusterMatrix)
   overlap <- 0
   for (i in seq_len(nclust - 1)) {
@@ -80,13 +83,16 @@ computeFitMetric <- function(clusterMatrix) {
   return(overlap)
 }
 
-# Main chase clustering. We minimize the (overlap + gamma * numClusters). See Fig. 1 flowchart in main paper.
+# ========== Main chase clustering ==========
+# Stochastic iterative assignment/shuffle to optimise cluster separation for 
+# a given penalty gamma.
 runChaseClustering <- function(preproc,
                                max_clusters,
                                max_starts,
                                max_shuffles,
                                site_coords,
-                               gamma   = 0,     # set > 0 to penalize more clusters
+                               # Regularisation penalty (tuned once on Pleistocene, fixed thereafter)
+                               gamma   = 0,     # set < 0 to penalize fewer clusters
                                verbose = TRUE) {
   
   dataMatrix         <- preproc$dataMatrix
@@ -102,14 +108,16 @@ runChaseClustering <- function(preproc,
   
   noImprovementCount <- 0
   
+  # Iterate over possible cluster counts (k)
   for (numClusters in 2:max_clusters) {
     improvementsFound <- 0
     
     for (startConfig in seq_len(max_starts)) {
-      # Initialize cluster assignment
+      # ----- INITIAL ASSIGNMENT -----
+      # Randomly seed k clusters (weighted by site richness)
       clusterAssign <- integer(ncol(dataMatrix))
       
-      # Randomly seed the clusters
+      # Assign all remaining sites to their most similar seeded cluster
       seedIndices <- sample(ncol(dataMatrix), numClusters, prob = weightVector)
       clusterAssign[seedIndices] <- seq_len(numClusters)
       
@@ -118,14 +126,16 @@ runChaseClustering <- function(preproc,
         validClusters <- which(clusterAssign > 0)
         rowProbs <- chaseMatrix[sampleIdx, validClusters]
         if (sum(rowProbs) == 0) {
+          # If no overlap, assign randomly
           clusterAssign[sampleIdx] <- sample.int(numClusters, 1)
         } else {
+          # Assign to the cluster with the most shared taxa
           chosenCol <- sample(validClusters, 1, prob = rowProbs)
           clusterAssign[sampleIdx] <- clusterAssign[chosenCol]
         }
       }
       
-      # Build cluster sum matrix (rows=species, cols=clusters)
+      # Create cluster sum matrix: rows = species, cols = clusters
       clusterSumMatrix <- matrix(0, nrow(dataMatrix), numClusters)
       for (colIdx in seq_len(ncol(dataMatrix))) {
         clusterSumMatrix[, clusterAssign[colIdx]] <- clusterSumMatrix[, clusterAssign[colIdx]] + dataMatrix[, colIdx]
@@ -135,14 +145,15 @@ runChaseClustering <- function(preproc,
       bestClusterAssign <- clusterAssign
       bestClusterSumMatrix <- clusterSumMatrix
       
-      # Shuffle to improve
+      # ----- SHUFFLE OPTIMISATION LOOP -----
       for (shuffleIdx in seq_len(max_shuffles)) {
         selectedSample <- sample.int(ncol(dataMatrix), 1)
         oldCluster <- clusterAssign[selectedSample]
         
-        # Avoid emptying that cluster if only 1 sample is in it
+        # Do not move if it would reduce old cluster below min size
         if (sum(clusterAssign == oldCluster) <= 1) next
         
+        # Determine candidate new cluster (by shared-taxa profile)
         rowProbs <- chaseMatrix[selectedSample, ]
         if (sum(rowProbs) == 0) {
           newCluster <- sample.int(numClusters, 1)
@@ -150,32 +161,31 @@ runChaseClustering <- function(preproc,
           chosenCol  <- sample.int(ncol(dataMatrix), 1, prob = rowProbs)
           newCluster <- clusterAssign[chosenCol]
         }
-        
-        # If no change, skip
         if (newCluster == oldCluster) next
         
-        # Move sample
+        # Tentatively reassign, update cluster sums
         clusterSumMatrix[, oldCluster] <- clusterSumMatrix[, oldCluster] - dataMatrix[, selectedSample]
         clusterSumMatrix[, newCluster] <- clusterSumMatrix[, newCluster] + dataMatrix[, selectedSample]
         
-        # Compute penalized fit
+        # Penalise degenerate or fragmented solutions
         rawFit      <- computeFitMetric(clusterSumMatrix)
-        if(rawFit==0) rawFit <- 1e6 # skip degenerate cases where rawFit == 0 (typically with clusters == 2)
+        if(rawFit==0) rawFit <- 1e6
         penalizedFit <- rawFit + gamma * numClusters
         
         if (penalizedFit < bestFitMetric) {
+          # Accept new assignment
           bestFitMetric <- penalizedFit
           clusterAssign[selectedSample] <- newCluster
           bestClusterAssign <- clusterAssign
           bestClusterSumMatrix <- clusterSumMatrix
         } else {
-          # Revert
+          # Reject and revert
           clusterSumMatrix[, newCluster] <- clusterSumMatrix[, newCluster] - dataMatrix[, selectedSample]
           clusterSumMatrix[, oldCluster] <- clusterSumMatrix[, oldCluster] + dataMatrix[, selectedSample]
         }
       }
       
-      # Compare to finalFitMetric
+      # Store best result for this k
       if (bestFitMetric < finalFitMetric[numClusters] - 1e-8) {
         finalFitMetric[numClusters] <- bestFitMetric
         finalClusterAssign[, numClusters] <- bestClusterAssign
@@ -211,13 +221,13 @@ runChaseClustering <- function(preproc,
                   numClusters, improvementsFound, finalFitMetric[numClusters]))
     }
     
-    # Update universal best
+    # Keep track of universal best (lowest penalised fit)
     if (finalFitMetric[numClusters] < universalBestFit) {
       universalBestFit      <- finalFitMetric[numClusters]
       universalBestClusters <- numClusters
       universalBestAssign   <- finalClusterAssign[, numClusters]
       
-      # Optional plot
+      # (Optional) Plot current best assignment for visual sanity-check
       idx <- paste0("s_", sampleNumber)
       plot_coords <- site_coords[idx, , drop = FALSE]
       lon <- as.numeric(as.character(plot_coords[, 1]))
@@ -249,6 +259,15 @@ runChaseClustering <- function(preproc,
   ))
 }
 
+# plot_world_map: Quick visualisation for site clusters on a global (Mollweide) projection.
+# point_data: data.frame with 'lon', 'lat', and a clustering variable (default 'cluster')
+# color_var: name of column in point_data to use for colour coding
+# point_size: size of points on the map
+# legend_position: position of the legend ("none" for no legend)
+# title, subtitle: optional strings for plot annotation
+# plot_margin: margin object for plot (default = small padding)
+# save_file: if provided, path to save output PNG (optional)
+# width, height, units, dpi, scale: control saved image size/resolution
 plot_world_map <- function(point_data, 
                            color_var = "cluster", 
                            point_size = 2, 
@@ -260,14 +279,17 @@ plot_world_map <- function(point_data,
                            width = 6, height = 4, 
                            units = "in", dpi = 300, scale = 1) {
 
+  # Base: world map (long <= 180 ensures consistent global cut)
   p <- ggplot() +
     geom_polygon(data = subset(map_data("world"), long <= 180), 
                  aes(x = long, y = lat, group = group), 
                  fill = "lightgrey", color = NA) +
+    # Cluster/site points overlaid, coloured by assigned cluster
     geom_point(data = point_data, 
                aes_string(x = "lon", y = "lat", 
                           color = paste0("factor(", color_var, ")")), 
                size = point_size) +
+    # Mollweide projection for equal-area global display
     coord_map("moll") +
     theme_void() +
     theme(legend.position = legend_position,
@@ -275,7 +297,8 @@ plot_world_map <- function(point_data,
           plot.subtitle = element_text(hjust = 0.5),
           plot.margin = plot_margin) +
     labs(title = title, subtitle = subtitle)
-  
+    
+  # Optionally, save plot as PNG (e.g., for manuscript figures)
   if (!is.null(save_file)) {
     ggsave(filename = save_file, plot = p, 
            width = width, height = height, units = units, dpi = dpi, scale = scale)
